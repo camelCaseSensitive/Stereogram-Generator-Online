@@ -18,8 +18,12 @@ For best results, scale the texture to your image ahead of time and use a textur
 
 The more detailed your depthmap is the more noise your texture will need in order for the details to be discernable. 
 
+# Tools
+
 You can find depthmaps online and I've posted many of the ones I've made to the depthmaps subreddit [r/depthmaps](https://www.reddit.com/r/depthMaps/)
 
 Here is a good ["Image to depthmap" converter online](https://huggingface.co/spaces/xingyang1/Distill-Any-Depth)
 
-And here is [the Blender file](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) that I use to make depthmaps of 3D models
+And here is [the Blender file](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) that I use to make depthmaps of 3D models.
+
+Post your results to the subreddit [r/MagicEye](https://www.reddit.com/r/MagicEye/)
