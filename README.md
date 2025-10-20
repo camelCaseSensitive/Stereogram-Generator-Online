@@ -5,7 +5,7 @@ Generate stereograms online - Drag and drop depthmap and texture to make magic e
 
 <p align="center">
   <a href="https://camelcasesensitive.github.io/Stereogram-Generator-Online/">
-    <img src="./Example.jpg" alt="Stereogram Generator Software" title="Stereogram generator" width="400">
+    <img src="./Example.jpg" alt="Stereogram Generator Software" title="Stereogram generator" width="600">
   </a>
 </p>
 
