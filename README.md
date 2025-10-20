@@ -16,4 +16,6 @@ By default the texture image will be be scaled to match the height of the depthm
 
 If you select "Tile Texture" it will instead scale the texture image to be the width of one strip and tile it vertically. 
 
+Larger depthmap images will take longer to render. 
 
+For best results, scale the texture to your image ahead of time and use a texture that has a lot of visual noise. The more detailed your depthmap is the more noise your texture will need in order for the details to be discernable. 
