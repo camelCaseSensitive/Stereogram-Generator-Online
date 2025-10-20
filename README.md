@@ -1,7 +1,7 @@
 # Stereogram-Generator-Online
 Generate stereograms online - Drag and drop depthmap and texture to make magic eye images online.  Allows you to make autostereograms in your browser for free.  Made by lavaboosted with p5js.
 
-# [Try It Out]([https://ammonb.github.io/stereogram-raycaster/](https://camelcasesensitive.github.io/Stereogram-Generator-Online/))
+### [Try It Out](https://camelcasesensitive.github.io/Stereogram-Generator-Online/)
 
 ![Stereogram Generator Software](./Example.jpg "Stereogram generator")
 
