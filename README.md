@@ -17,3 +17,9 @@ Larger depthmap images will take longer to render but have smoother 3D surfaces.
 For best results, scale the texture to your image ahead of time and use a texture that has a lot of visual noise. 
 
 The more detailed your depthmap is the more noise your texture will need in order for the details to be discernable. 
+
+You can find depthmaps online and I've posted many of the ones I've made to the depthmaps subreddit [r/depthmaps](https://www.reddit.com/r/depthMaps/)
+
+Here is a good ["Image to depthmap" converter online](https://huggingface.co/spaces/xingyang1/Distill-Any-Depth)
+
+And here is [the Blender file that I use](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) to make depthmaps of 3D models
