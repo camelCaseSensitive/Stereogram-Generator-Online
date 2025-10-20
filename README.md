@@ -22,4 +22,4 @@ You can find depthmaps online and I've posted many of the ones I've made to the 
 
 Here is a good ["Image to depthmap" converter online](https://huggingface.co/spaces/xingyang1/Distill-Any-Depth)
 
-And here is [the Blender file that I use](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) to make depthmaps of 3D models
+And here is [the Blender file](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) that I use to make depthmaps of 3D models
