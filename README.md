@@ -3,7 +3,11 @@ Generate stereograms online - Drag and drop depthmap and texture to make magic e
 
 ### [Try It Out](https://camelcasesensitive.github.io/Stereogram-Generator-Online/)
 
-[![Stereogram Generator Software](./Example.jpg "Stereogram generator")](https://camelcasesensitive.github.io/Stereogram-Generator-Online/)
+<p align="center">
+  <a href="https://camelcasesensitive.github.io/Stereogram-Generator-Online/">
+    <img src="./Example.jpg" alt="Stereogram Generator Software" title="Stereogram generator" width="400">
+  </a>
+</p>
 
 # Tips
 Drag and drop an image or click the dropbox to upload a depthmap from your computer. If you don't upload images it will use the defailt Teapot and Bushes seen above. 
