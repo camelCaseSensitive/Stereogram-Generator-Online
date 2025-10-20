@@ -2,6 +2,11 @@
 let depthImg = null;
 let textureImg = null;
 
+function preload() {
+  depthImg = loadImage("Teapot.jpg")
+  textureImg = loadImage("Bushes.jpg")
+}
+
 let numStripsInput, depthMultInput, imgScaleInput, tileTextureCheckbox;
 let generateButton;
 let outputGraphics;
