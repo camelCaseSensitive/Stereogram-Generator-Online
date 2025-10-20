@@ -3,8 +3,11 @@ Generate stereograms online - Drag and drop depthmap and texture to make magic e
 
 # [Give it a try here](https://ammonb.github.io/stereogram-raycaster/)
 
+![Stereogram Generator Software](./Example.jpg "Stereogram generator")
+
 ## Depth map and Texture images
 ![Teapot Depthmap](./Teapot.jpg "Teapot depthmap")
+
 Drag and drop an image or click the dropbox to upload a depthmap from your computer. 
 
 ![Bushes texture](./Bushes.jpg "Bushes texture")
