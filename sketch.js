@@ -46,12 +46,28 @@ function setup() {
   imgScaleInput = createLabeledInput('Image Scale', 1.0, inputContainer);
 
   // --- Tile Texture checkbox ---
+  // let tileContainer = createDiv().style('display', 'flex')
+  //   .style('flex-direction', 'column')
+  //   .style('align-items', 'center');
+  // createSpan('Tile Texture').style('margin-bottom', '5px').parent(tileContainer);
+  // tileTextureCheckbox = createCheckbox('', false).parent(tileContainer);
+  // inputContainer.child(tileContainer);
+  
+  // --- Tile Texture checkbox ---
   let tileContainer = createDiv().style('display', 'flex')
     .style('flex-direction', 'column')
     .style('align-items', 'center');
   createSpan('Tile Texture').style('margin-bottom', '5px').parent(tileContainer);
   tileTextureCheckbox = createCheckbox('', false).parent(tileContainer);
   inputContainer.child(tileContainer);
+
+  // --- Crossview checkbox ---
+  let crossContainer = createDiv().style('display', 'flex')
+    .style('flex-direction', 'column')
+    .style('align-items', 'center');
+  createSpan('Crossview').style('margin-bottom', '5px').parent(crossContainer);
+  crossviewCheckbox = createCheckbox('', false).parent(crossContainer);
+  inputContainer.child(crossContainer);
 
   // --- Generate button ---
   generateButton = createButton('Generate Stereogram');
@@ -191,11 +207,15 @@ async function generateStereogram() {
   const depthMult = parseFloat(depthMultInput.value());
   const imgScale   = parseFloat(imgScaleInput.value());
   const tileTexture = tileTextureCheckbox ? tileTextureCheckbox.checked() : false;
+  const crossview = crossviewCheckbox ? crossviewCheckbox.checked() : false;
+console.log('Tile Texture:', tileTexture);
 
   console.log('Number of Strips:', numStrips);
   console.log('Depth Multiplier:', depthMult);
   console.log('Image Scale:', imgScale);
   console.log('Tile Texture:', tileTexture);
+  console.log('Crossview:', crossview);
+  
 
   // --- Scale depth/texture (same as your code) ---
   depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
@@ -253,11 +273,17 @@ async function generateStereogram() {
       const stripX = o * stripWidth;
 
       for (let x = 0; x < stripWidth; x++) {
+        // const depthIdx = 4 * ((y * dW) - (x + stripX));
         const depthIdx = 4 * ((y * dW) + (x + stripX));
+        
         const depthVal = dpx[depthIdx];             // grayscale from R channel
         const shift    = shiftLUT[depthVal];
 
-        let srcX = x + stripX + shift;
+        // let srcX = x + stripX + shift;
+        
+        // let crossview = true;
+        let srcX = x + stripX + (crossview ? -shift : shift);
+        
         if (srcX < 0) srcX = 0;
         if (srcX >= outW) srcX = outW - 1;
 
