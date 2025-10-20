@@ -60,6 +60,14 @@ function setup() {
   createSpan('Tile Texture').style('margin-bottom', '5px').parent(tileContainer);
   tileTextureCheckbox = createCheckbox('', false).parent(tileContainer);
   inputContainer.child(tileContainer);
+  
+  // --- Mirror Tiles checkbox ---
+  let mirrorContainer = createDiv().style('display', 'flex')
+    .style('flex-direction', 'column')
+    .style('align-items', 'center');
+  createSpan('Mirror Tiles').style('margin-bottom', '5px').parent(mirrorContainer);
+  mirrorTilesCheckbox = createCheckbox('', false).parent(mirrorContainer);
+  inputContainer.child(mirrorContainer);
 
   // --- Crossview checkbox ---
   let crossContainer = createDiv().style('display', 'flex')
@@ -207,14 +215,19 @@ async function generateStereogram() {
   const depthMult   = parseFloat(depthMultInput.value());
   const imgScale    = parseFloat(imgScaleInput.value());
   const tileTexture = tileTextureCheckbox ? tileTextureCheckbox.checked() : false;
+  
+  const mirrorTiles = mirrorTilesCheckbox ? mirrorTilesCheckbox.checked() : false;
+
+  // console.log('Mirror Tiles:', mirrorTiles);
+  
   const crossview   = typeof crossviewCheckbox !== 'undefined'
                       ? crossviewCheckbox.checked() : false;
 
-  console.log('Number of Strips:', numStrips);
-  console.log('Depth Multiplier:', depthMult);
-  console.log('Image Scale:', imgScale);
-  console.log('Tile Texture:', tileTexture);
-  console.log('Crossview:', crossview);
+  // console.log('Number of Strips:', numStrips);
+  // console.log('Depth Multiplier:', depthMult);
+  // console.log('Image Scale:', imgScale);
+  // console.log('Tile Texture:', tileTexture);
+  // console.log('Crossview:', crossview);
 
   // --- Scale depth (OK to resize depth map copy-in-place if desired) ---
   depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
@@ -233,9 +246,6 @@ async function generateStereogram() {
   let textureCopy = textureImg.get(); // p5.get() with no args returns a copy
 
   if (tileTexture) {
-    // Match your original behavior:
-    // 1) scale to 1.1 * stripWidth (keep aspect)
-    // 2) tile that scaled copy vertically to the full strip height
     const targetW = Math.ceil(stripWidth * 1.1);
     const targetH = Math.round(textureCopy.height * targetW / textureCopy.width);
     textureCopy.resize(targetW, targetH);
@@ -245,10 +255,20 @@ async function generateStereogram() {
 
     const copies = Math.ceil(stripHeight / textureCopy.height);
     for (let i = 0; i < copies; i++) {
-      newTexture.image(textureCopy, 0, i * textureCopy.height);
+      if (mirrorTiles && (i % 2 === 1)) {
+        // draw mirrored tile
+        newTexture.push();
+        newTexture.translate(0, (i + 1) * textureCopy.height); // move down one tile height
+        newTexture.scale(1, -1); // flip vertically
+        newTexture.image(textureCopy, 0, 0);
+        newTexture.pop();
+      } else {
+        // normal tile
+        newTexture.image(textureCopy, 0, i * textureCopy.height);
+      }
     }
 
-    texSrc = newTexture; // use the vertically tiled copy
+    texSrc = newTexture;
   } else {
     // Match your “else” path:
     // (a) ensure min width of 1.1 * stripWidth
