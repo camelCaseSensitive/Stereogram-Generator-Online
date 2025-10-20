@@ -197,58 +197,84 @@ function displayImageInZone(zone, img) {
 }
 
 async function generateStereogram() {
-  // --- UI prep (yours) ---
+  // --- UI prep ---
   outputImgElement.hide();
   loadingContainer.show(); loadingText.show();
   loadingBar.style('width', '0%'); loadingText.html('0%');
 
-  // --- Read settings (yours) ---
-  const numStrips = parseInt(numStripsInput.value());
-  const depthMult = parseFloat(depthMultInput.value());
-  const imgScale   = parseFloat(imgScaleInput.value());
+  // --- Read settings ---
+  const numStrips   = parseInt(numStripsInput.value());
+  const depthMult   = parseFloat(depthMultInput.value());
+  const imgScale    = parseFloat(imgScaleInput.value());
   const tileTexture = tileTextureCheckbox ? tileTextureCheckbox.checked() : false;
-  const crossview = crossviewCheckbox ? crossviewCheckbox.checked() : false;
-console.log('Tile Texture:', tileTexture);
+  const crossview   = typeof crossviewCheckbox !== 'undefined'
+                      ? crossviewCheckbox.checked() : false;
 
   console.log('Number of Strips:', numStrips);
   console.log('Depth Multiplier:', depthMult);
   console.log('Image Scale:', imgScale);
   console.log('Tile Texture:', tileTexture);
   console.log('Crossview:', crossview);
-  
 
-  // --- Scale depth/texture (same as your code) ---
+  // --- Scale depth (OK to resize depth map copy-in-place if desired) ---
   depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
+
   const stripWidth  = Math.floor(depthImg.width / numStrips);
   const stripHeight = depthImg.height;
 
-  if (stripHeight > textureImg.height) {
-    textureImg.resize(textureImg.width * stripHeight / textureImg.height, stripHeight);
-  }
-
-  // --- Create output buffer and draw the LEFTMOST strip from the texture (your first step) ---
+  // --- Create output buffer ---
   const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
   cnv.noSmooth();
 
-  // Leftmost strip (as-is):
-  // If you want tiling, you can draw a repeated texture pattern across 'stripWidth' here.
-  if (!tileTexture) {
-    cnv.image(textureImg, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight);
-  } else {
-    // simple horizontal tiling to fill the first strip region
-    let tx = 0;
-    while (tx < stripWidth) {
-      const w = Math.min(textureImg.width, stripWidth - tx);
-      cnv.image(textureImg, tx, 0, w, stripHeight, 0, 0, w, stripHeight);
-      tx += w;
+ // --- Build the LEFTMOST strip texture source without mutating the user's texture ---
+  let texSrc;
+
+  // start from a copy so we never resize() the original upload
+  let textureCopy = textureImg.get(); // p5.get() with no args returns a copy
+
+  if (tileTexture) {
+    // Match your original behavior:
+    // 1) scale to 1.1 * stripWidth (keep aspect)
+    // 2) tile that scaled copy vertically to the full strip height
+    const targetW = Math.ceil(stripWidth * 1.1);
+    const targetH = Math.round(textureCopy.height * targetW / textureCopy.width);
+    textureCopy.resize(targetW, targetH);
+
+    const newTexture = createGraphics(textureCopy.width, stripHeight);
+    newTexture.noSmooth();
+
+    const copies = Math.ceil(stripHeight / textureCopy.height);
+    for (let i = 0; i < copies; i++) {
+      newTexture.image(textureCopy, 0, i * textureCopy.height);
     }
+
+    texSrc = newTexture; // use the vertically tiled copy
+  } else {
+    // Match your “else” path:
+    // (a) ensure min width of 1.1 * stripWidth
+    const minW = Math.ceil(stripWidth * 1.1);
+    if (stripWidth > textureCopy.width * 1.1) {
+      const newH = Math.round(textureCopy.height * minW / textureCopy.width);
+      textureCopy.resize(minW, newH);
+    }
+
+    // (b) if needed, scale up to match stripHeight (keep aspect)
+    if (stripHeight > textureCopy.height) {
+      const newW = Math.round(textureCopy.width * stripHeight / textureCopy.height);
+      textureCopy.resize(newW, stripHeight);
+    }
+
+    texSrc = textureCopy;
   }
+
+  // --- Paint the leftmost strip from texSrc (as in your pipeline) ---
+  cnv.image(texSrc, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight);
 
   // --- Prep typed arrays ---
   depthImg.loadPixels();
-  const dpx = depthImg.pixels;              // Uint8ClampedArray
-  const dW  = depthImg.width;
-  const dH  = depthImg.height;
+  const dpx  = depthImg.pixels;             // Uint8ClampedArray
+  const dW   = depthImg.width;
+  const dH   = depthImg.height;
   const outW = cnv.width;
 
   // Disparity LUT
@@ -258,38 +284,30 @@ console.log('Tile Texture:', tileTexture);
   const ctx = cnv.drawingContext; // CanvasRenderingContext2D
 
   // --- MAIN: build each row in memory, then write once ---
-  const totalUnits = dH * numStrips;
-  const progressEvery = Math.max(1, Math.floor(dH / 80)); // ~80 ticks total
+  const progressEvery = Math.max(1, Math.floor(dH / 80)); // ~80 ticks
 
   for (let y = 0; y < dH; y++) {
-    // Grab the ENTIRE existing row once (contains the leftmost strip we drew)
-    // This returns a fresh ImageData; we'll mutate its .data and then put it back.
+    // Take the current row (contains the leftmost strip we just drew)
     const rowImageData = ctx.getImageData(0, y, outW, 1);
     const row = rowImageData.data; // Uint8ClampedArray length = outW * 4
 
-    // For each strip o (0..numStrips-1), extend the row to the right by one strip
-    // by sampling previously "drawn" pixels in this same 'row' array (in-memory).
+    // Grow the row strip-by-strip to the right, sampling already-written pixels
     for (let o = 0; o < numStrips; o++) {
       const stripX = o * stripWidth;
 
       for (let x = 0; x < stripWidth; x++) {
-        // const depthIdx = 4 * ((y * dW) - (x + stripX));
         const depthIdx = 4 * ((y * dW) + (x + stripX));
-        
         const depthVal = dpx[depthIdx];             // grayscale from R channel
         const shift    = shiftLUT[depthVal];
 
-        // let srcX = x + stripX + shift;
-        
-        // let crossview = true;
+        // Parallel vs Crossview: flip disparity direction when crossview is true
         let srcX = x + stripX + (crossview ? -shift : shift);
-        
+
         if (srcX < 0) srcX = 0;
         if (srcX >= outW) srcX = outW - 1;
 
-        const dstX = x + stripWidth + stripX;       // write into next strip area
+        const dstX = x + stripWidth + stripX;
 
-        // copy 4 bytes RGBA from srcX -> dstX inside the same row buffer
         const si = (srcX << 2);
         const di = (dstX << 2);
         row[di    ] = row[si    ];
@@ -299,32 +317,28 @@ console.log('Tile Texture:', tileTexture);
       }
     }
 
-    // Write the completed row back in one go
     ctx.putImageData(rowImageData, 0, y);
 
-    // Progress updates (throttled)
     if ((y % progressEvery) === 0) {
-      const percent = Math.floor(((y) / dH) * 100);
+      const percent = Math.floor((y / dH) * 100);
       loadingBar.style('width', percent + '%');
       loadingText.html(percent + '%');
-      // yield so UI can paint
-      await sleep(0);
+      await sleep(0); // yield so UI can paint
     }
   }
 
-  // --- Finalize like you already do ---
-  outputGraphics = cnv;
-  
+  // --- Finalize to blob URL so "Open image in new tab" works ---
+  // (optional) revoke previous blob URL to free memory
+  const oldURL = outputImgElement.attribute('src');
+  if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
+
   cnv.elt.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
     outputImgElement.attribute('src', url);
+    loadingContainer.hide();
+    loadingText.hide();
+    outputImgElement.show();
   });
-
-  loadingContainer.hide();
-  loadingText.hide();
-  outputImgElement.show();
 }
 
-// tiny helper
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
