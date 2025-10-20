@@ -1,3 +1,5 @@
+// Github: https://github.com/camelCaseSensitive/Stereogram-Generator-Online
+
 // Stereogram Generator UI with clickable uploads, loading bar, and "Tile Texture" checkbox
 let depthImg = null;
 let textureImg = null;
@@ -286,8 +288,11 @@ async function generateStereogram() {
 
   // --- Finalize like you already do ---
   outputGraphics = cnv;
-  const imgData = cnv.elt.toDataURL('image/png');
-  outputImgElement.attribute('src', imgData);
+  
+  cnv.elt.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    outputImgElement.attribute('src', url);
+  });
 
   loadingContainer.hide();
   loadingText.hide();
