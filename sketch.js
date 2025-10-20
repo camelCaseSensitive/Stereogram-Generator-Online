@@ -3,8 +3,8 @@ let depthImg = null;
 let textureImg = null;
 
 function preload() {
-  depthImg = loadImage("Teapot.jpg")
-  textureImg = loadImage("Bushes.jpg")
+  depthImg = loadImage("Teapot2.jpg")
+  textureImg = loadImage("bushes2.jpg")
 }
 
 let numStripsInput, depthMultInput, imgScaleInput, tileTextureCheckbox;
@@ -179,121 +179,121 @@ function displayImageInZone(zone, img) {
 }
 
 async function generateStereogram() {
-  // Hide previous output, show loading UI
+  // --- UI prep (yours) ---
   outputImgElement.hide();
-  loadingContainer.show();
-  loadingText.show();
-  loadingBar.style('width', '0%');
-  loadingText.html('0%');
+  loadingContainer.show(); loadingText.show();
+  loadingBar.style('width', '0%'); loadingText.html('0%');
 
-  // Read all settings
-  let numStrips = parseInt(numStripsInput.value());
-  let depthMult = parseFloat(depthMultInput.value());
-  let imgScale = parseFloat(imgScaleInput.value());
-  let tileTexture = tileTextureCheckbox.checked();
+  // --- Read settings (yours) ---
+  const numStrips = parseInt(numStripsInput.value());
+  const depthMult = parseFloat(depthMultInput.value());
+  const imgScale   = parseFloat(imgScaleInput.value());
+  const tileTexture = tileTextureCheckbox ? tileTextureCheckbox.checked() : false;
 
   console.log('Number of Strips:', numStrips);
   console.log('Depth Multiplier:', depthMult);
   console.log('Image Scale:', imgScale);
   console.log('Tile Texture:', tileTexture);
 
-  // Simulate a heavy computation with progress feedback
-  // let totalIterations = 100000;
-  // for (let i = 0; i <= totalIterations; i++) {
-  //   if (i % 100 === 0) {
-  //     let percent = int((i / totalIterations) * 100);
-  //     loadingBar.style('width', percent + '%');
-  //     loadingText.html(percent + '%');
-  //     await sleep(10); // yield briefly to update UI
-  //   }
-  // }
-  
-  
-  let strips = numStrips;
-  
-  depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale)
+  // --- Scale depth/texture (same as your code) ---
+  depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
+  const stripWidth  = Math.floor(depthImg.width / numStrips);
+  const stripHeight = depthImg.height;
 
-  // Width of each strip
-  let stripWidth = floor(depthImg.width / strips);
-  
-  // Height of each strip
-  let stripHeight = depthImg.height;
-  
-  // Create a copy of the original texture image
-  textureCopy = textureImg.get(); 
+  if (stripHeight > textureImg.height) {
+    textureImg.resize(textureImg.width * stripHeight / textureImg.height, stripHeight);
+  }
 
-  
-  if(tileTexture) {
-    textureCopy.resize(stripWidth * 1.1, textureCopy.height * stripWidth * 1.1 / textureCopy.width)
-    let newTexture = createGraphics(textureCopy.width, depthImg.height)
-    let copies = ceil(depthImg.height / textureCopy.height)
-    for(let i = 0; i < copies; i++){
-      newTexture.image(textureCopy, 0, i * textureCopy.height)
-    }
-    textureCopy = newTexture;
+  // --- Create output buffer and draw the LEFTMOST strip from the texture (your first step) ---
+  const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
+  cnv.noSmooth();
+
+  // Leftmost strip (as-is):
+  // If you want tiling, you can draw a repeated texture pattern across 'stripWidth' here.
+  if (!tileTexture) {
+    cnv.image(textureImg, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight);
   } else {
-    console.log("No tile")
-    if(stripWidth > textureCopy.width * 1.1){
-      textureCopy.resize(stripWidth * 1.1, textureCopy.height * stripWidth * 1.1 / textureCopy.width)
-    }
-
-    if(stripHeight > textureCopy.height){
-      textureCopy.resize(textureCopy.width * stripHeight / textureCopy.height, stripHeight)
+    // simple horizontal tiling to fill the first strip region
+    let tx = 0;
+    while (tx < stripWidth) {
+      const w = Math.min(textureImg.width, stripWidth - tx);
+      cnv.image(textureImg, tx, 0, w, stripHeight, 0, 0, w, stripHeight);
+      tx += w;
     }
   }
-  
-  
-  
-  // cnv = createCanvas(depthImg.width + stripWidth, depthImg.height) ;
-  let cnv = createGraphics(depthImg.width + stripWidth, depthImg.height) ;
-  
-  
-  
-  // Left most strip drawn as is (no horizontal offsets)
-  cnv.image(textureCopy, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight)
-  cnv.noStroke();
 
-  // Generate the stereogram
-    for(let o = 0; o < strips; o++){
-      cnv.translate(stripWidth, 0) 
-      // image(pattern, 0, 0, 100, 400, 0, 0, 100, 400)
-      for(let j = 0; j < depthImg.height; j++){
-        // let offset = o;
-        let percent = int(( (j + o * depthImg.height) / (depthImg.height*strips)) * 100);
-        loadingBar.style('width', percent + '%');
-        loadingText.html(percent + '%');
-        await sleep(10); // yield briefly to update UI
-        for(let i = 0; i < stripWidth; i++){
-          let d = depthImg.get(i + stripWidth * o, j);
-          let c;
-          if(d[0] >= 0) {
-            c = cnv.get(i + stripWidth*o + 15 * d[0] * depthMult /255, j);
-          } else {
-            c = cnv.get(i, j);
-          }
-          cnv.fill(c);
-          cnv.rect(i, j, 1, 1);
-        }
+  // --- Prep typed arrays ---
+  depthImg.loadPixels();
+  const dpx = depthImg.pixels;              // Uint8ClampedArray
+  const dW  = depthImg.width;
+  const dH  = depthImg.height;
+  const outW = cnv.width;
+
+  // Disparity LUT
+  const shiftLUT = new Int16Array(256);
+  for (let v = 0; v < 256; v++) shiftLUT[v] = Math.floor(15 * v * depthMult / 255);
+
+  const ctx = cnv.drawingContext; // CanvasRenderingContext2D
+
+  // --- MAIN: build each row in memory, then write once ---
+  const totalUnits = dH * numStrips;
+  const progressEvery = Math.max(1, Math.floor(dH / 80)); // ~80 ticks total
+
+  for (let y = 0; y < dH; y++) {
+    // Grab the ENTIRE existing row once (contains the leftmost strip we drew)
+    // This returns a fresh ImageData; we'll mutate its .data and then put it back.
+    const rowImageData = ctx.getImageData(0, y, outW, 1);
+    const row = rowImageData.data; // Uint8ClampedArray length = outW * 4
+
+    // For each strip o (0..numStrips-1), extend the row to the right by one strip
+    // by sampling previously "drawn" pixels in this same 'row' array (in-memory).
+    for (let o = 0; o < numStrips; o++) {
+      const stripX = o * stripWidth;
+
+      for (let x = 0; x < stripWidth; x++) {
+        const depthIdx = 4 * ((y * dW) + (x + stripX));
+        const depthVal = dpx[depthIdx];             // grayscale from R channel
+        const shift    = shiftLUT[depthVal];
+
+        let srcX = x + stripX + shift;
+        if (srcX < 0) srcX = 0;
+        if (srcX >= outW) srcX = outW - 1;
+
+        const dstX = x + stripWidth + stripX;       // write into next strip area
+
+        // copy 4 bytes RGBA from srcX -> dstX inside the same row buffer
+        const si = (srcX << 2);
+        const di = (dstX << 2);
+        row[di    ] = row[si    ];
+        row[di + 1] = row[si + 1];
+        row[di + 2] = row[si + 2];
+        row[di + 3] = 255;
       }
     }
 
-  // Once done, render final result
-  outputGraphics = cnv;
-  // outputGraphics.background(230);
-  // if (depthImg) outputGraphics.image(depthImg, 0, 0, outputGraphics.width / 2, outputGraphics.height);
-  // if (textureImg) outputGraphics.image(textureImg, outputGraphics.width / 2, 0, outputGraphics.width / 2, outputGraphics.height);
+    // Write the completed row back in one go
+    ctx.putImageData(rowImageData, 0, y);
 
-  let imgData = outputGraphics.elt.toDataURL('image/png');
+    // Progress updates (throttled)
+    if ((y % progressEvery) === 0) {
+      const percent = Math.floor(((y) / dH) * 100);
+      loadingBar.style('width', percent + '%');
+      loadingText.html(percent + '%');
+      // yield so UI can paint
+      await sleep(0);
+    }
+  }
+
+  // --- Finalize like you already do ---
+  outputGraphics = cnv;
+  const imgData = cnv.elt.toDataURL('image/png');
   outputImgElement.attribute('src', imgData);
 
-  // Hide loading UI, show final image
   loadingContainer.hide();
   loadingText.hide();
   outputImgElement.show();
-
-  console.log('Stereogram generation complete.');
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// tiny helper
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
