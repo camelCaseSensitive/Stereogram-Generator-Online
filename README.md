@@ -3,24 +3,13 @@ Generate stereograms online - Drag and drop depthmap and texture to make magic e
 
 # [Give it a try here](https://ammonb.github.io/stereogram-raycaster/)
 
-## How it works
+## Depth map and Texture images
+![Teapot Depthmap](./Teapot.jpg "Teapot depthmap")
+Drag and drop an image or click the dropbox to upload a depthmap from your computer. 
 
-Upload a depthmap and a texture. 
+![Bushes texture](./Bushes.jpg "Bushes texture")
 
-
-## Raycasting
-
-Raycasting is an algorithm for rending 3D (or pseudo-3D) geometry. It was made famous by Wolfenstein 3D and Doom. The core algorithm is delightfully simple (you can write a working renderer in about 20 lines). The best way to understand ray casting is to view it as a simplification of ray tracing.
-
-In ray tracing, rays are 'traced' from the location of a camera in a scene out into the world. One ray is calculated for each pixel in the output image. All the render needs to do, then, is calculate what color object each ray intersects first, and draw a pixel of that color. The following images (from Wikipedia) shows the idea.
-![ray tracing](./Teapot "Teapot depthmap")
-This algorithm produces beautiful renderings, but is computationally expensive.
-
-Raycasting is an optimization on this idea. Rather than calculate a ray per pixel, a raycaster calculates a ray per column of pixels, and reconstructs the column of pixels by considering the length of the ray. As long as the geometry satisfies certain constraints, this works like a charm, and is dramatically faster. To understand how this works, imagine a simple block maze like Wolfenstein 3D.
-
-![Simple raycaster](./Bushes.jpg "Bushes texture")
-
-Notice that all walls are vertical and of constant height, with the camera at the midpoint on the walls. This means that the rendered image is vertically symmetrical. As we draw this image, than, all we need to know is the height and color of the line to draw in each column. By perspective math, this height is simply the original wall height divided by the distance to the wall (or length of the ray cast for each column). The following image shows this.
+By default the texture image will be be scaled to match the height of the depthmap image. If you select "Tile texture" it will instead scale the texture image to be the width of one strip and tile it vertically. 
 
 ![ray casting](./images/raycasting.png "Ray casting")
 
