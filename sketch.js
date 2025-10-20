@@ -87,17 +87,45 @@ function setup() {
   generateButton.mousePressed(generateStereogram);
 
   // --- Output display area ---
-  createElement('h3', 'Output Image').style('text-align', 'center').style('margin-top', '10px');
+  // createElement('h3', 'Output Image').style('text-align', 'center').style('margin-top', '10px');
+  // outputImgElement = createImg('', 'Generated Stereogram');
+  // outputImgElement.style('display', 'block')
+  //   .style('margin', '0 auto')
+  //   .style('max-width', '90%')
+  //   .style('border', '1px solid #ccc')
+  //   .style('background', '#fafafa')
+  //   .style('padding', '10px')
+  //   .style('border-radius', '8px')
+  //   .style('box-shadow', '0 2px 5px rgba(0,0,0,0.1)')
+  //   .hide();
+  
+  // --- Output display area ---
+  createElement('h3', 'Output Image')
+    .style('text-align', 'center')
+    .style('margin-top', '10px');
+
   outputImgElement = createImg('', 'Generated Stereogram');
   outputImgElement.style('display', 'block')
-    .style('margin', '0 auto')
-    .style('max-width', '90%')
+    .style('margin', '20px auto')
     .style('border', '1px solid #ccc')
     .style('background', '#fafafa')
     .style('padding', '10px')
     .style('border-radius', '8px')
     .style('box-shadow', '0 2px 5px rgba(0,0,0,0.1)')
+    // ✅ Responsive, but accurate scaling
+    .style('max-width', '90vw')   // shrink to fit viewport width if needed
+    .style('height', 'auto')      // maintain aspect ratio
+    .style('max-height', '80vh')  // shrink to fit viewport height if needed
+    .style('object-fit', 'contain')
     .hide();
+  
+  // outputImgElement.style('display', 'block')
+  //   .style('margin', '0 auto')
+  //   .style('background', '#fafafa')
+  //   .style('border', '1px solid #ccc')
+  //   .style('width', cnv.width + 'px')
+  //   .style('height', cnv.height + 'px')
+  //   .style('max-width', 'none');
 
   // --- Loading bar ---
   loadingContainer = createDiv().style('width', '80%')
@@ -352,9 +380,40 @@ async function generateStereogram() {
   const oldURL = outputImgElement.attribute('src');
   if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
 
+  // cnv.elt.toBlob((blob) => {
+  //   const url = URL.createObjectURL(blob);
+  //   outputImgElement.attribute('src', url);
+  //   loadingContainer.hide();
+  //   loadingText.hide();
+  //   outputImgElement.show();
+  // });
+
+  // (optional) revoke previous blob URL to free memory
+  // const oldURL = outputImgElement.attribute('src');
+  // if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
+
+//   cnv.elt.toBlob((blob) => {
+//     const url = URL.createObjectURL(blob);
+//     outputImgElement.attribute('src', url);
+
+//     // ✅ Give the browser the actual intrinsic pixel dimensions
+//     outputImgElement.attribute('width', cnv.width);
+//     outputImgElement.attribute('height', cnv.height);
+
+//     // Hide loading, show final image
+//     loadingContainer.hide();
+//     loadingText.hide();
+//     outputImgElement.show();
+//   });
+  
   cnv.elt.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
     outputImgElement.attribute('src', url);
+
+    // ✅ Force correct dimensions
+    outputImgElement.attribute('width', cnv.width);
+    outputImgElement.attribute('height', cnv.height);
+
     loadingContainer.hide();
     loadingText.hide();
     outputImgElement.show();
