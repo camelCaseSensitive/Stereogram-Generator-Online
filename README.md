@@ -28,10 +28,12 @@ The more detailed your depthmap is the more noise your texture will need in orde
 
 You can find depthmaps online and I've posted many of the ones I've made to the depthmaps subreddit [r/depthmaps](https://www.reddit.com/r/depthMaps/)
 
-Here is a good ["Image to depthmap" converter online](https://huggingface.co/spaces/xingyang1/Distill-Any-Depth)
+Here is a good online tool for [converting images to depthmaps](https://huggingface.co/spaces/xingyang1/Distill-Any-Depth)
 
-And here is [the Blender file](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) that I use to make depthmaps of 3D models.
+And here is [the Blender file](https://sketchfab.com/3d-models/depth-map-generator-c945ab12857843edb66d2755de4986ec) that I use to make depthmaps from 3D models.
 
 # Share!
 
 Post your results to the subreddit [r/MagicEye](https://www.reddit.com/r/MagicEye/) or [r/Stereograms](https://www.reddit.com/r/stereograms/)
+
+Share your depthmaps to [r/depthmaps](https://www.reddit.com/r/depthMaps/)
