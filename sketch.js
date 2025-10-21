@@ -30,6 +30,13 @@ function setup() {
 
   depthZone = createDropZone('Drop Depth Map Here', gotDepthFile);
   dropZoneContainer.child(depthZone.container);
+  
+  // global drag listener
+  window.addEventListener('dragover', (event) => {
+    if (event.dataTransfer && event.dataTransfer.types.includes('Files')) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
 
   textureZone = createDropZone('Drop Texture Image Here', gotTextureFile);
   dropZoneContainer.child(textureZone.container);
