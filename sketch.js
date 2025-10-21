@@ -393,18 +393,58 @@ async function generateStereogram() {
 
   // --- Finalize to blob URL so "Open image in new tab" works ---
   // (optional) revoke previous blob URL to free memory
+  // const oldURL = outputImgElement.attribute('src');
+  // if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
+
+  
+//   cnv.elt.toBlob((blob) => {
+//     const url = URL.createObjectURL(blob);
+//     outputImgElement.attribute('src', url);
+
+//     // ✅ Force correct dimensions
+//     outputImgElement.attribute('width', cnv.width);
+//     outputImgElement.attribute('height', cnv.height);
+
+//     loadingContainer.hide();
+//     loadingText.hide();
+//     outputImgElement.show();
+//   });
+  
+//   cnv.elt.toBlob((blob) => {
+//     const url = URL.createObjectURL(blob);
+
+//     // ✅ Tell the browser the true dimensions before setting the src
+//     outputImgElement.attribute('width', cnv.width);
+//     outputImgElement.attribute('height', cnv.height);
+
+//     outputImgElement.attribute('src', url);
+
+//     loadingContainer.hide();
+//     loadingText.hide();
+//     outputImgElement.show();
+//   });
+  
+  // --- Finalize to blob URL so "Open image in new tab" works ---
   const oldURL = outputImgElement.attribute('src');
   if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
 
-  
   cnv.elt.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
-    outputImgElement.attribute('src', url);
 
-    // ✅ Force correct dimensions
+    // ✅ Tell browser the correct dimensions *before* setting the src
     outputImgElement.attribute('width', cnv.width);
     outputImgElement.attribute('height', cnv.height);
 
+    // ✅ Assign the blob source
+    outputImgElement.attribute('src', url);
+
+    // ✅ Add Chrome reflow fix: run once image finishes decoding
+    outputImgElement.elt.onload = () => {
+      outputImgElement.style('width', 'auto');
+      outputImgElement.style('height', 'auto');
+    };
+
+    // ✅ Now finish up
     loadingContainer.hide();
     loadingText.hide();
     outputImgElement.show();
