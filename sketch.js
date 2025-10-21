@@ -257,14 +257,24 @@ async function generateStereogram() {
   // console.log('Tile Texture:', tileTexture);
   // console.log('Crossview:', crossview);
 
-  // --- Scale depth (OK to resize depth map copy-in-place if desired) ---
-  depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
+  // // --- Scale depth (OK to resize depth map copy-in-place if desired) ---
+  // depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
+  
+  // --- Safe copy and scale for depth map ---
+  let depthCopy = depthImg.get(); // create a copy so original stays intact
+  depthCopy.resize(depthCopy.width * imgScale, depthCopy.height * imgScale);
 
-  const stripWidth  = Math.floor(depthImg.width / numStrips);
-  const stripHeight = depthImg.height;
+  // const stripWidth  = Math.floor(depthImg.width / numStrips);
+  // const stripHeight = depthImg.height;
+  
+  const stripWidth  = Math.floor(depthCopy.width / numStrips);
+  const stripHeight = depthCopy.height;
 
   // --- Create output buffer ---
-  const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
+  // const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
+  
+  const cnv = createGraphics(depthCopy.width + stripWidth, stripHeight);
+  
   cnv.noSmooth();
 
  // --- Build the LEFTMOST strip texture source without mutating the user's texture ---
@@ -319,10 +329,16 @@ async function generateStereogram() {
   cnv.image(texSrc, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight);
 
   // --- Prep typed arrays ---
-  depthImg.loadPixels();
-  const dpx  = depthImg.pixels;             // Uint8ClampedArray
-  const dW   = depthImg.width;
-  const dH   = depthImg.height;
+  // depthImg.loadPixels();
+  // const dpx  = depthImg.pixels;             // Uint8ClampedArray
+  // const dW   = depthImg.width;
+  // const dH   = depthImg.height;
+  
+  depthCopy.loadPixels();
+  const dpx = depthCopy.pixels;
+  const dW  = depthCopy.width;
+  const dH  = depthCopy.height;
+  
   const outW = cnv.width;
 
   // Disparity LUT
@@ -380,31 +396,6 @@ async function generateStereogram() {
   const oldURL = outputImgElement.attribute('src');
   if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
 
-  // cnv.elt.toBlob((blob) => {
-  //   const url = URL.createObjectURL(blob);
-  //   outputImgElement.attribute('src', url);
-  //   loadingContainer.hide();
-  //   loadingText.hide();
-  //   outputImgElement.show();
-  // });
-
-  // (optional) revoke previous blob URL to free memory
-  // const oldURL = outputImgElement.attribute('src');
-  // if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
-
-//   cnv.elt.toBlob((blob) => {
-//     const url = URL.createObjectURL(blob);
-//     outputImgElement.attribute('src', url);
-
-//     // ✅ Give the browser the actual intrinsic pixel dimensions
-//     outputImgElement.attribute('width', cnv.width);
-//     outputImgElement.attribute('height', cnv.height);
-
-//     // Hide loading, show final image
-//     loadingContainer.hide();
-//     loadingText.hide();
-//     outputImgElement.show();
-//   });
   
   cnv.elt.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
