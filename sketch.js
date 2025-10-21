@@ -273,7 +273,12 @@ async function generateStereogram() {
   // --- Create output buffer ---
   // const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
   
+  // const cnv = createGraphics(depthCopy.width + stripWidth, stripHeight);
+  
+  // --- Create output buffer ---
   const cnv = createGraphics(depthCopy.width + stripWidth, stripHeight);
+  cnv.pixelDensity(1);   // ✅ prevent high-DPI scaling issues (Chrome fix)
+  // cnv.noSmooth();
   
   cnv.noSmooth();
 
