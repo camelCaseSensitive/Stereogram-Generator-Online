@@ -5,11 +5,12 @@ let depthImg = null;
 let textureImg = null;
 
 function preload() {
-  depthImg = loadImage("Teapot.jpg")
-  textureImg = loadImage("Bushes.jpg")
+  depthImg = loadImage("Teapot.jpg");
+  textureImg = loadImage("Bushes.jpg");
 }
 
 let numStripsInput, depthMultInput, imgScaleInput, tileTextureCheckbox;
+let mirrorTilesCheckbox, crossviewCheckbox;
 let generateButton;
 let outputGraphics;
 let outputImgElement;
@@ -30,7 +31,7 @@ function setup() {
 
   depthZone = createDropZone('Drop Depth Map Here', gotDepthFile);
   dropZoneContainer.child(depthZone.container);
-  
+
   // global drag listener
   window.addEventListener('dragover', (event) => {
     if (event.dataTransfer && event.dataTransfer.types.includes('Files')) {
@@ -53,21 +54,13 @@ function setup() {
   imgScaleInput = createLabeledInput('Image Scale', 1.0, inputContainer);
 
   // --- Tile Texture checkbox ---
-  // let tileContainer = createDiv().style('display', 'flex')
-  //   .style('flex-direction', 'column')
-  //   .style('align-items', 'center');
-  // createSpan('Tile Texture').style('margin-bottom', '5px').parent(tileContainer);
-  // tileTextureCheckbox = createCheckbox('', false).parent(tileContainer);
-  // inputContainer.child(tileContainer);
-  
-  // --- Tile Texture checkbox ---
   let tileContainer = createDiv().style('display', 'flex')
     .style('flex-direction', 'column')
     .style('align-items', 'center');
   createSpan('Tile Texture').style('margin-bottom', '5px').parent(tileContainer);
   tileTextureCheckbox = createCheckbox('', false).parent(tileContainer);
   inputContainer.child(tileContainer);
-  
+
   // --- Mirror Tiles checkbox ---
   let mirrorContainer = createDiv().style('display', 'flex')
     .style('flex-direction', 'column')
@@ -94,19 +87,6 @@ function setup() {
   generateButton.mousePressed(generateStereogram);
 
   // --- Output display area ---
-  // createElement('h3', 'Output Image').style('text-align', 'center').style('margin-top', '10px');
-  // outputImgElement = createImg('', 'Generated Stereogram');
-  // outputImgElement.style('display', 'block')
-  //   .style('margin', '0 auto')
-  //   .style('max-width', '90%')
-  //   .style('border', '1px solid #ccc')
-  //   .style('background', '#fafafa')
-  //   .style('padding', '10px')
-  //   .style('border-radius', '8px')
-  //   .style('box-shadow', '0 2px 5px rgba(0,0,0,0.1)')
-  //   .hide();
-  
-  // --- Output display area ---
   createElement('h3', 'Output Image')
     .style('text-align', 'center')
     .style('margin-top', '10px');
@@ -119,20 +99,11 @@ function setup() {
     .style('padding', '10px')
     .style('border-radius', '8px')
     .style('box-shadow', '0 2px 5px rgba(0,0,0,0.1)')
-    // ✅ Responsive, but accurate scaling
-    .style('max-width', '90vw')   // shrink to fit viewport width if needed
-    .style('height', 'auto')      // maintain aspect ratio
-    .style('max-height', '80vh')  // shrink to fit viewport height if needed
+    .style('max-width', '90vw')
+    .style('height', 'auto')
+    .style('max-height', '80vh')
     .style('object-fit', 'contain')
     .hide();
-  
-  // outputImgElement.style('display', 'block')
-  //   .style('margin', '0 auto')
-  //   .style('background', '#fafafa')
-  //   .style('border', '1px solid #ccc')
-  //   .style('width', cnv.width + 'px')
-  //   .style('height', cnv.height + 'px')
-  //   .style('max-width', 'none');
 
   // --- Loading bar ---
   loadingContainer = createDiv().style('width', '80%')
@@ -152,7 +123,7 @@ function setup() {
   loadingText = createP('0%').style('text-align', 'center')
     .style('margin-top', '5px')
     .hide();
-  
+
   // --- Footer ---
   createElement('footer', '© Copyright lavaboosted')
     .style('text-align', 'center')
@@ -242,225 +213,190 @@ function displayImageInZone(zone, img) {
 async function generateStereogram() {
   // --- UI prep ---
   outputImgElement.hide();
-  loadingContainer.show(); loadingText.show();
-  loadingBar.style('width', '0%'); loadingText.html('0%');
+  loadingContainer.show();
+  loadingText.show();
+  loadingBar.style('width', '0%');
+  loadingText.html('0%');
 
   // --- Read settings ---
   const numStrips   = parseInt(numStripsInput.value());
   const depthMult   = parseFloat(depthMultInput.value());
   const imgScale    = parseFloat(imgScaleInput.value());
   const tileTexture = tileTextureCheckbox ? tileTextureCheckbox.checked() : false;
-  
   const mirrorTiles = mirrorTilesCheckbox ? mirrorTilesCheckbox.checked() : false;
-
-  // console.log('Mirror Tiles:', mirrorTiles);
-  
   const crossview   = typeof crossviewCheckbox !== 'undefined'
-                      ? crossviewCheckbox.checked() : false;
+                    ? crossviewCheckbox.checked()
+                    : false;
 
-  // console.log('Number of Strips:', numStrips);
-  // console.log('Depth Multiplier:', depthMult);
-  // console.log('Image Scale:', imgScale);
-  // console.log('Tile Texture:', tileTexture);
-  // console.log('Crossview:', crossview);
-
-  // // --- Scale depth (OK to resize depth map copy-in-place if desired) ---
-  // depthImg.resize(depthImg.width * imgScale, depthImg.height * imgScale);
-  
   // --- Safe copy and scale for depth map ---
-  let depthCopy = depthImg.get(); // create a copy so original stays intact
+  let depthCopy = depthImg.get();
   depthCopy.resize(depthCopy.width * imgScale, depthCopy.height * imgScale);
 
-  // const stripWidth  = Math.floor(depthImg.width / numStrips);
-  // const stripHeight = depthImg.height;
-  
-  const stripWidth  = Math.floor(depthCopy.width / numStrips);
-  const stripHeight = depthCopy.height;
+  const outW = depthCopy.width;
+  const outH = depthCopy.height;
+  const repeatSize = Math.max(1, Math.floor(outW / numStrips));
+
+  // Preserve your old slider feel:
+  // old code used max shift ≈ 15 * depthMult px
+  // so keep that in pixels rather than making it proportional to strip width
+  const maxSep = Math.min(repeatSize - 1, Math.max(0, Math.round(15 * depthMult)));
 
   // --- Create output buffer ---
-  // const cnv = createGraphics(depthImg.width + stripWidth, stripHeight);
-  
-  // const cnv = createGraphics(depthCopy.width + stripWidth, stripHeight);
-  
-  // --- Create output buffer ---
-  const cnv = createGraphics(depthCopy.width + stripWidth, stripHeight);
-  cnv.pixelDensity(1);   // ✅ prevent high-DPI scaling issues (Chrome fix)
-  // cnv.noSmooth();
-  
+  const cnv = createGraphics(outW, outH);
+  cnv.pixelDensity(1);
   cnv.noSmooth();
 
- // --- Build the LEFTMOST strip texture source without mutating the user's texture ---
+  // --- Build the texture source exactly like your original pipeline ---
   let texSrc;
-
-  // start from a copy so we never resize() the original upload
-  let textureCopy = textureImg.get(); // p5.get() with no args returns a copy
+  let textureCopy = textureImg.get();
 
   if (tileTexture) {
-    const targetW = Math.ceil(stripWidth * 1.1);
+    const targetW = Math.ceil(repeatSize * 1.1);
     const targetH = Math.round(textureCopy.height * targetW / textureCopy.width);
     textureCopy.resize(targetW, targetH);
 
-    const newTexture = createGraphics(textureCopy.width, stripHeight);
+    const newTexture = createGraphics(textureCopy.width, outH);
+    newTexture.pixelDensity(1);
     newTexture.noSmooth();
 
-    const copies = Math.ceil(stripHeight / textureCopy.height);
+    const copies = Math.ceil(outH / textureCopy.height);
     for (let i = 0; i < copies; i++) {
       if (mirrorTiles && (i % 2 === 1)) {
-        // draw mirrored tile
         newTexture.push();
-        newTexture.translate(0, (i + 1) * textureCopy.height); // move down one tile height
-        newTexture.scale(1, -1); // flip vertically
+        newTexture.translate(0, (i + 1) * textureCopy.height);
+        newTexture.scale(1, -1);
         newTexture.image(textureCopy, 0, 0);
         newTexture.pop();
       } else {
-        // normal tile
         newTexture.image(textureCopy, 0, i * textureCopy.height);
       }
     }
 
     texSrc = newTexture;
   } else {
-    // Match your “else” path:
-    // (a) ensure min width of 1.1 * stripWidth
-    const minW = Math.ceil(stripWidth * 1.1);
-    if (stripWidth > textureCopy.width * 1.1) {
+    const minW = Math.ceil(repeatSize * 1.1);
+    if (textureCopy.width < minW) {
       const newH = Math.round(textureCopy.height * minW / textureCopy.width);
       textureCopy.resize(minW, newH);
     }
 
-    // (b) if needed, scale up to match stripHeight (keep aspect)
-    if (stripHeight > textureCopy.height) {
-      const newW = Math.round(textureCopy.width * stripHeight / textureCopy.height);
-      textureCopy.resize(newW, stripHeight);
+    if (textureCopy.height < outH) {
+      const newW = Math.round(textureCopy.width * outH / textureCopy.height);
+      textureCopy.resize(newW, outH);
     }
 
     texSrc = textureCopy;
   }
 
-  // --- Paint the leftmost strip from texSrc (as in your pipeline) ---
-  cnv.image(texSrc, 0, 0, stripWidth, stripHeight, 0, 0, stripWidth, stripHeight);
-
-  // --- Prep typed arrays ---
-  // depthImg.loadPixels();
-  // const dpx  = depthImg.pixels;             // Uint8ClampedArray
-  // const dW   = depthImg.width;
-  // const dH   = depthImg.height;
-  
+  // --- Load pixels once ---
   depthCopy.loadPixels();
+  texSrc.loadPixels();
+  cnv.loadPixels();
+
   const dpx = depthCopy.pixels;
-  const dW  = depthCopy.width;
-  const dH  = depthCopy.height;
-  
-  const outW = cnv.width;
+  const tpx = texSrc.pixels;
+  const cpx = cnv.pixels;
 
-  // Disparity LUT
-  const shiftLUT = new Int16Array(256);
-  for (let v = 0; v < 256; v++) shiftLUT[v] = Math.floor(15 * v * depthMult / 255);
+  const texW = texSrc.width;
+  const texH = texSrc.height;
 
-  const ctx = cnv.drawingContext; // CanvasRenderingContext2D
+  const progressEvery = Math.max(1, Math.floor(outH / 80));
 
-  // --- MAIN: build each row in memory, then write once ---
-  const progressEvery = Math.max(1, Math.floor(dH / 80)); // ~80 ticks
+  // helper
+  const clampIndex = (v, lo, hi) => v < lo ? lo : (v > hi ? hi : v);
+  const mod = (a, b) => ((a % b) + b) % b;
 
-  for (let y = 0; y < dH; y++) {
-    // Take the current row (contains the leftmost strip we just drew)
-    const rowImageData = ctx.getImageData(0, y, outW, 1);
-    const row = rowImageData.data; // Uint8ClampedArray length = outW * 4
-
-    // Grow the row strip-by-strip to the right, sampling already-written pixels
-    for (let o = 0; o < numStrips; o++) {
-      const stripX = o * stripWidth;
-
-      for (let x = 0; x < stripWidth; x++) {
-        const depthIdx = 4 * ((y * dW) + (x + stripX));
-        const depthVal = dpx[depthIdx];             // grayscale from R channel
-        const shift    = shiftLUT[depthVal];
-
-        // Parallel vs Crossview: flip disparity direction when crossview is true
-        let srcX = x + stripX + (crossview ? -shift : shift);
-
-        if (srcX < 0) srcX = 0;
-        if (srcX >= outW) srcX = outW - 1;
-
-        const dstX = x + stripWidth + stripX;
-
-        const si = (srcX << 2);
-        const di = (dstX << 2);
-        row[di    ] = row[si    ];
-        row[di + 1] = row[si + 1];
-        row[di + 2] = row[si + 2];
-        row[di + 3] = 255;
-      }
+  for (let y = 0; y < outH; y++) {
+    // --- Read normalized depth row ---
+    const depthRow = new Float32Array(outW);
+    for (let x = 0; x < outW; x++) {
+      const di = 4 * (x + y * outW);
+      depthRow[x] = dpx[di] / 255; // assume grayscale depth map
     }
 
-    ctx.putImageData(rowImageData, 0, y);
+    // --- Bidirectional propagation of texture coordinates ---
+    const L = new Float32Array(outW);
+    const R = new Float32Array(outW);
+
+    for (let i = 0; i < outW; i++) {
+      let gap = repeatSize;
+      for (let j = 0; j < 4; j++) {
+        const probe = clampIndex(i - ((gap / 2) | 0), 0, outW - 1);
+        gap = repeatSize - Math.round(maxSep * depthRow[probe]);
+        if (gap < 1) gap = 1;
+      }
+      L[i] = (i < gap) ? i : (L[i - gap] + repeatSize);
+    }
+
+    for (let i = outW - 1; i >= 0; i--) {
+      let gap = repeatSize;
+      for (let j = 0; j < 4; j++) {
+        const probe = clampIndex(i + ((gap / 2) | 0), 0, outW - 1);
+        gap = repeatSize - Math.round(maxSep * depthRow[probe]);
+        if (gap < 1) gap = 1;
+      }
+      R[i] = (i + gap >= outW) ? i : (R[i + gap] - repeatSize);
+    }
+
+    // --- Average the two texture coordinates ---
+    for (let x = 0; x < outW; x++) {
+      let avg = 0.5 * (L[x] + R[x]);
+
+      // crossview: mirror disparity direction
+      if (crossview) avg = -avg;
+
+      const texX = mod(Math.round(avg), repeatSize);
+      const sampleX = mod(texX, texW);
+      const sampleY = mod(y, texH);
+
+      const si = 4 * (sampleX + sampleY * texW);
+      const di = 4 * (x + y * outW);
+
+      cpx[di    ] = tpx[si    ];
+      cpx[di + 1] = tpx[si + 1];
+      cpx[di + 2] = tpx[si + 2];
+      cpx[di + 3] = 255;
+    }
 
     if ((y % progressEvery) === 0) {
-      const percent = Math.floor((y / dH) * 100);
+      cnv.updatePixels();
+      const percent = Math.floor((y / outH) * 100);
       loadingBar.style('width', percent + '%');
       loadingText.html(percent + '%');
-      await sleep(0); // yield so UI can paint
+      await sleep(0);
     }
   }
 
-  // --- Finalize to blob URL so "Open image in new tab" works ---
-  // (optional) revoke previous blob URL to free memory
-  // const oldURL = outputImgElement.attribute('src');
-  // if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
+  cnv.updatePixels();
 
-  
-//   cnv.elt.toBlob((blob) => {
-//     const url = URL.createObjectURL(blob);
-//     outputImgElement.attribute('src', url);
-
-//     // ✅ Force correct dimensions
-//     outputImgElement.attribute('width', cnv.width);
-//     outputImgElement.attribute('height', cnv.height);
-
-//     loadingContainer.hide();
-//     loadingText.hide();
-//     outputImgElement.show();
-//   });
-  
-//   cnv.elt.toBlob((blob) => {
-//     const url = URL.createObjectURL(blob);
-
-//     // ✅ Tell the browser the true dimensions before setting the src
-//     outputImgElement.attribute('width', cnv.width);
-//     outputImgElement.attribute('height', cnv.height);
-
-//     outputImgElement.attribute('src', url);
-
-//     loadingContainer.hide();
-//     loadingText.hide();
-//     outputImgElement.show();
-//   });
-  
-  // --- Finalize to blob URL so "Open image in new tab" works ---
+  // --- Finalize to blob URL ---
   const oldURL = outputImgElement.attribute('src');
   if (oldURL && oldURL.startsWith('blob:')) URL.revokeObjectURL(oldURL);
 
   cnv.elt.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
 
-    // ✅ Tell browser the correct dimensions *before* setting the src
     outputImgElement.attribute('width', cnv.width);
     outputImgElement.attribute('height', cnv.height);
-
-    // ✅ Assign the blob source
     outputImgElement.attribute('src', url);
 
-    // ✅ Add Chrome reflow fix: run once image finishes decoding
     outputImgElement.elt.onload = () => {
       outputImgElement.style('width', 'auto');
       outputImgElement.style('height', 'auto');
     };
 
-    // ✅ Now finish up
+    loadingBar.style('width', '100%');
+    loadingText.html('100%');
     loadingContainer.hide();
     loadingText.hide();
     outputImgElement.show();
   });
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
